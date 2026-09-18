@@ -37,41 +37,65 @@ export function BarcodeScannerDialog({
     let cancelled = false;
     setError(null);
 
-    import("@zxing/browser").then(async ({ BrowserMultiFormatReader }) => {
-      if (cancelled || !videoRef.current) return;
-      const reader = new BrowserMultiFormatReader();
-      try {
-        const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: "environment" } },
-          videoRef.current,
-          (result) => {
-            if (!result) return;
-            const code = result.getText();
-            const now = Date.now();
-            if (
-              code === lastScanRef.current.code &&
-              now - lastScanRef.current.time < DUPLICATE_WINDOW_MS
-            ) {
-              return;
+    Promise.all([import("@zxing/browser"), import("@zxing/library")]).then(
+      async ([{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }]) => {
+        if (cancelled || !videoRef.current) return;
+
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [
+          BarcodeFormat.EAN_13,
+          BarcodeFormat.EAN_8,
+          BarcodeFormat.UPC_A,
+          BarcodeFormat.UPC_E,
+          BarcodeFormat.CODE_128,
+          BarcodeFormat.CODE_39,
+          BarcodeFormat.ITF,
+          BarcodeFormat.QR_CODE,
+        ]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+
+        const reader = new BrowserMultiFormatReader(hints);
+        try {
+          const controls = await reader.decodeFromConstraints(
+            {
+              video: {
+                facingMode: "environment",
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+                // @ts-expect-error focusMode no esta en el tipo estandar pero mejora el enfoque en camaras que lo soportan
+                advanced: [{ focusMode: "continuous" }],
+              },
+            },
+            videoRef.current,
+            (result) => {
+              if (!result) return;
+              const code = result.getText();
+              const now = Date.now();
+              if (
+                code === lastScanRef.current.code &&
+                now - lastScanRef.current.time < DUPLICATE_WINDOW_MS
+              ) {
+                return;
+              }
+              lastScanRef.current = { code, time: now };
+              onScanRef.current(code);
+              if (closeOnScanRef.current) onOpenChangeRef.current(false);
             }
-            lastScanRef.current = { code, time: now };
-            onScanRef.current(code);
-            if (closeOnScanRef.current) onOpenChangeRef.current(false);
-          }
-        );
-        if (cancelled) {
-          controls.stop();
-          return;
-        }
-        controlsRef.current = controls;
-      } catch {
-        if (!cancelled) {
-          setError(
-            "No se pudo acceder a la cámara. Verifica los permisos del navegador y que uses HTTPS."
           );
+          if (cancelled) {
+            controls.stop();
+            return;
+          }
+          controlsRef.current = controls;
+        } catch {
+          if (!cancelled) {
+            setError(
+              "No se pudo acceder a la cámara. Verifica los permisos del navegador y que uses HTTPS."
+            );
+          }
         }
       }
-    });
+    );
 
     return () => {
       cancelled = true;
