@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import {
   Search,
   Barcode,
+  Camera,
   Minus,
   Plus,
   Trash2,
@@ -22,6 +23,7 @@ import { cn } from "cn";
 import { CustomerCombobox } from "@/components/pos/customer-combobox";
 import { PaymentDialog, type PaymentLine } from "@/components/pos/payment-dialog";
 import { ReceiptDialog } from "@/components/pos/receipt-dialog";
+import { BarcodeScannerDialog } from "@/components/pos/barcode-scanner-dialog";
 import { createSale, type SaleReceipt } from "@/app/(app)/pos/actions";
 
 type Product = {
@@ -84,6 +86,7 @@ export function PosClient({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [receipt, setReceipt] = React.useState<SaleReceipt | null>(null);
   const [receiptOpen, setReceiptOpen] = React.useState(false);
+  const [scannerOpen, setScannerOpen] = React.useState(false);
 
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -199,6 +202,16 @@ export function PosClient({
     }
   }
 
+  function handleCameraScan(code: string) {
+    const match = products.find((p) => p.barcode === code || p.internalCode === code);
+    if (match) {
+      addProductToCart(match);
+      toast.success(`${match.name} agregado`);
+    } else {
+      toast.error(`No se encontró ningún producto con el código ${code}`);
+    }
+  }
+
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "F2") {
@@ -261,6 +274,15 @@ export function PosClient({
               onKeyDown={handleBarcodeEnter}
             />
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0"
+            onClick={() => setScannerOpen(true)}
+          >
+            <Camera className="size-4" />
+            Escanear con cámara
+          </Button>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -459,6 +481,11 @@ export function PosClient({
         onOpenChange={setReceiptOpen}
         receipt={receipt}
         business={business}
+      />
+      <BarcodeScannerDialog
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScan={handleCameraScan}
       />
     </div>
   );
