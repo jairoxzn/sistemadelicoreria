@@ -36,6 +36,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# archivos subidos por usuarios (imagenes de productos, etc.)
+/public/uploads/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma generated client
+/src/generated/prisma
+
+/src/generated/prisma
