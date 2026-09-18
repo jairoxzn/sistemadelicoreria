@@ -13,11 +13,13 @@ import {
   Package,
   ChevronLeft,
   ChevronRight,
+  Camera,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { BarcodeScannerDialog } from "@/components/shared/barcode-scanner-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -376,6 +378,7 @@ function ProductFormDialog({
   suppliers: Option[];
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [scannerOpen, setScannerOpen] = React.useState(false);
   const form = useForm<ProductFormInput, unknown, ProductValues>({
     resolver: zodResolver(productSchema),
     defaultValues: emptyValues(),
@@ -404,6 +407,7 @@ function ProductFormDialog({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
@@ -447,9 +451,21 @@ function ProductFormDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Código de barras</FormLabel>
-                    <FormControl>
-                      <Input placeholder="7751271016" {...field} />
-                    </FormControl>
+                    <div className="flex gap-1.5">
+                      <FormControl>
+                        <Input placeholder="7751271016" {...field} />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0"
+                        title="Escanear con cámara"
+                        onClick={() => setScannerOpen(true)}
+                      >
+                        <Camera className="size-4" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -730,6 +746,13 @@ function ProductFormDialog({
         </Form>
       </DialogContent>
     </Dialog>
+    <BarcodeScannerDialog
+      open={scannerOpen}
+      onOpenChange={setScannerOpen}
+      closeOnScan
+      onScan={(code) => form.setValue("barcode", code, { shouldValidate: true, shouldDirty: true })}
+    />
+    </>
   );
 }
 

@@ -10,20 +10,27 @@ export function BarcodeScannerDialog({
   open,
   onOpenChange,
   onScan,
+  closeOnScan = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onScan: (code: string) => void;
+  /** Cierra el diálogo automáticamente tras la primera lectura exitosa. */
+  closeOnScan?: boolean;
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const controlsRef = React.useRef<IScannerControls | null>(null);
   const lastScanRef = React.useRef<{ code: string; time: number }>({ code: "", time: 0 });
   const onScanRef = React.useRef(onScan);
+  const closeOnScanRef = React.useRef(closeOnScan);
+  const onOpenChangeRef = React.useRef(onOpenChange);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     onScanRef.current = onScan;
-  }, [onScan]);
+    closeOnScanRef.current = closeOnScan;
+    onOpenChangeRef.current = onOpenChange;
+  }, [onScan, closeOnScan, onOpenChange]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -49,6 +56,7 @@ export function BarcodeScannerDialog({
             }
             lastScanRef.current = { code, time: now };
             onScanRef.current(code);
+            if (closeOnScanRef.current) onOpenChangeRef.current(false);
           }
         );
         if (cancelled) {
@@ -88,7 +96,8 @@ export function BarcodeScannerDialog({
           <p className="text-sm text-destructive">{error}</p>
         ) : (
           <p className="text-center text-xs text-muted-foreground">
-            Apunta la cámara al código de barras del producto. Puedes escanear varios seguidos.
+            Apunta la cámara al código de barras del producto.
+            {!closeOnScan && " Puedes escanear varios seguidos."}
           </p>
         )}
       </DialogContent>

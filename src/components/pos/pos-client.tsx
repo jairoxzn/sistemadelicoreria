@@ -23,7 +23,7 @@ import { cn } from "cn";
 import { CustomerCombobox } from "@/components/pos/customer-combobox";
 import { PaymentDialog, type PaymentLine } from "@/components/pos/payment-dialog";
 import { ReceiptDialog } from "@/components/pos/receipt-dialog";
-import { BarcodeScannerDialog } from "@/components/pos/barcode-scanner-dialog";
+import { BarcodeScannerDialog } from "@/components/shared/barcode-scanner-dialog";
 import { createSale, type SaleReceipt } from "@/app/(app)/pos/actions";
 
 type Product = {
