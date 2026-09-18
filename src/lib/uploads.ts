@@ -38,17 +38,34 @@ export async function saveUploadedImage(
   const filename = `${randomUUID()}.${extension}`;
 
   if (process.env.BLOB_READ_WRITE_TOKEN) {
-    const blob = await put(`${subfolder}/${filename}`, file, {
-      access: "public",
-      contentType: file.type,
-    });
-    return { url: blob.url };
+    try {
+      const blob = await put(`${subfolder}/${filename}`, file, {
+        access: "public",
+        contentType: file.type,
+      });
+      return { url: blob.url };
+    } catch (err) {
+      console.error("Error subiendo imagen a Vercel Blob:", err);
+      return { error: "No se pudo subir la imagen a Vercel Blob. Intenta de nuevo." };
+    }
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const uploadDir = path.join(process.cwd(), "public", "uploads", subfolder);
-  await mkdir(uploadDir, { recursive: true });
-  await writeFile(path.join(uploadDir, filename), buffer);
+  if (process.env.VERCEL) {
+    return {
+      error:
+        "El almacenamiento de imágenes (Vercel Blob) no está conectado a este proyecto. " +
+        "Ve a Vercel → Storage → conecta el Blob store a este proyecto y vuelve a desplegar.",
+    };
+  }
 
-  return { url: `/uploads/${subfolder}/${filename}` };
+  try {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadDir = path.join(process.cwd(), "public", "uploads", subfolder);
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(path.join(uploadDir, filename), buffer);
+    return { url: `/uploads/${subfolder}/${filename}` };
+  } catch (err) {
+    console.error("Error guardando imagen local:", err);
+    return { error: "No se pudo guardar la imagen." };
+  }
 }
